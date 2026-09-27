@@ -1,4 +1,4 @@
-# CL_Improvement
+# CLImprovement
 A CLI-based self-improvement app. This is my second main project that I'll be working on. And it'll be FREE for everyone (with a computer, unless I can add syncing to phone).
 
 ## Getting Started
