@@ -2,6 +2,8 @@
 A CLI-based self-improvement app. This is my second main project that I'll be working on. And it'll be FREE for everyone (with a computer, unless I can add syncing to phone).
 
 ## Getting Started
+To even get the app launched, firstly, copy or download the script, and then place it in the directory at which you'll be running it (remember, files will be created in the same directory, so do with that as you will). After that, run the python script. I recommend running it from the terminal.
+
 So, when launching the app, you will be greeted with the screen of:
 ```shell
 What do you want to open ('/help' for commands)? 
