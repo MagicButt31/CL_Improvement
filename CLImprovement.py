@@ -1,212 +1,303 @@
-import sys
 import json
 import os
+import sys
 
-def main():
-    write_file("tasks.json", "a", "")
-    clearterminal()
-    print("Welcome to CLImprovement!")
-    while True:
-        try:
-            tools_inp = input("What do you want to open ('/help' for commands)? ")
-            if tools_inp.find("/") == 0:
-                a = general_commands(tools_inp)
-                if a == "break":
-                    break
-                elif a == "apps":
-                    print("Apps:\ntasks: task tracker")
-            else:
-                if app_access(tools_inp) == "task":
-                    task()
-        except KeyboardInterrupt:
-            print("\nnuh-uh, you have to use /quit because I say so.")
+class FileManager:
+    @staticmethod
+    def read_file(file_name: str):
+        with open(file_name, "r", encoding="utf-8") as file:
+            return file.read()
 
-def app_access(inp):
-    if inp.lower() == "task" or inp.lower() == "tasks":
-        return "task"
-    else:
-        print("app doesn't exist")
+    @staticmethod
+    def write_file(file_name: str, mode: str, content: str):
+        with open(file_name, mode, encoding="utf-8") as file:
+            file.write(content)
 
-def general_commands(inp):
-    clearterminal()
-    if inp == "/quit":
-        sys.exit()
-    elif inp == "/exit":
-        return "break"
-    elif inp == "/help":
-        print("""Commands:
-/quit: quits the whole program
-/exit: exits application (quits program if on main screen)
-/apps: shows apps that are available (or what an app can do)""")
-        return "more commands"
-    elif inp == "/apps":
-        return "apps"
-    else:
-        print("Command doesn't exist.")
+    @staticmethod
+    def read_json(file_name: str):
+        content = FileManager.read_file(file_name)
 
-def read_file(file_name : str):
-    with open(file_name, "r", encoding="utf-8") as file:
-        return file.read()
+        if content == "":
+            return []
 
-def write_file(file_name: str, w_a, what_to_write):
-    with open(file_name, w_a, encoding="utf-8") as file:
-        file.write(what_to_write)
+        return json.loads(content)
 
-def clearterminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    @staticmethod
+    def write_json(file_name: str, data):
+        FileManager.write_file(
+            file_name,
+            "w",
+            json.dumps(data, indent=4)
+        )
 
-def date_converter(date):
-    month_list = ["January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December"]
+class Utilities:
+    @staticmethod
+    def clear_terminal():
+        os.system("cls" if os.name == "nt" else "clear")
 
-    if date == "":
-        return ""
-    else:
+    @staticmethod
+    def date_converter(date: str):
+        month_list = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December"
+        ]
+
+        if date == "":
+            return ""
+
         date = date.replace("/", " ")
         date = date.replace(".", " ")
         date = date.replace("-", " ")
         date = date.replace(",", "")
+
         month, day, year = date.split(" ")
+
         try:
-            month = month_list.index(month)
-            month = month + 1
+            month = month_list.index(month) + 1
         except ValueError:
             pass
 
         return f"{year}-{month:02}-{day:02}"
 
-def task():
-    clearterminal()
-    task_list = read_file("tasks.json")
-    print("Entered Tasks...")
-    #add actual task saving
-    while True:
-        task_list = read_file("tasks.json")
-        if task_list == "":
-            task_list = []
-        else:
-            task_list = [item for item in json.loads(task_list)]
-        if task_list == []:
-            print("you have no tasks")
-        else:
-            for x in task_list:
-                print(f"[{x['complete']}] {x['name']} (@{x['due_date']})")
-        task_inp = input("Tasks: What do you want to do? ")
-        if task_inp.find("/") == 0:
-            clearterminal()
-            a = general_commands(task_inp)
-            if a == "break":
-                break
-            elif task_inp == "/help":
-                a
-                print("/cancel: cancels process of app")
-            elif a == "apps":
-                print("""Functions of tasks:
-add tasks: literally just adds tasks to save
-view tasks (decomissioned): view tasks that have been made
-clear all tasks: removes every single task made
-clear one task: clears one task at a time
-complete task: completes tasks""")
-        else:
-            if task_inp == "add tasks" or task_inp == "add task":
-                clearterminal()
-                if task_list == []:
-                    print("you have no tasks")
+class TaskManager:
+    FILE_NAME = "tasks.json"
+
+    def __init__(self):
+        self.tasks = FileManager.read_json(self.FILE_NAME)
+
+    def save(self):
+        FileManager.write_json(self.FILE_NAME, self.tasks)
+
+    def display_tasks(self):
+        if not self.tasks:
+            print("You have no tasks.")
+            return
+
+        for task in self.tasks:
+            print(
+                f"[{task['complete']}] "
+                f"{task['name']} "
+                f"(@{task['due_date']})"
+            )
+
+    def add_task(self, name: str, due_date: str):
+        task = {
+            "name": name,
+            "due_date": due_date,
+            "complete": ""
+        }
+
+        self.tasks.append(task)
+        self.save()
+
+    def delete_all_tasks(self):
+        self.tasks = []
+        self.save()
+
+    def clear_task(self, name: str):
+        self.tasks = [task for task in self.tasks if task["name"].lower() != name]
+
+        self.save()
+
+    def toggle_complete(self, name: str):
+        for task in self.tasks:
+            if task["name"].lower() == name:
+                if task["complete"] == "x":
+                    task["complete"] = ""
                 else:
-                    for x in task_list:
-                        print(f"[{x['complete']}] {x['name']} (@{x['due_date']})")
-                while True:
-                    task_name = input("What task do you want to add (put in '/finish' to finish)? ")
-                    try:
-                        if task_name.find("/") == 0:
-                            if task_name == "/finish":
-                                clearterminal()
-                                print("task(s) has been added")
-                                write_file("tasks.json", "w", json.dumps(task_list, indent=4))
-                                break
-                            elif task_remove == "/cancel":
-                                print("cancelling")
-                                break
-                            elif task_name == "/help":
-                                print("I cannot help you right now.")
-                            else:
-                                print("command doesn't exist")
-                        else:
-                            due_date = input("when is your task due (format mm/dd/yyyy, and words are fine  )? ")
-                            due_date = date_converter(due_date)
-                            task_finalized = {'name': task_name, 'due_date': due_date, 'complete': ''}
-                            task_list.append(task_finalized)
-                    except UnboundLocalError or TypeError:
-                        print("command doesn't exist")
-            elif task_inp == "view tasks" or task_inp == "view tasks":
-                clearterminal()
-                print("command has been decomissioned")
-            elif task_inp == "clear all task" or task_inp == "clear all tasks":
-                clearterminal()
-                write_file("tasks.json", "w", "")
-                task_list = []
-                print("tasks cleared")
-            elif task_inp == "clear one task" or task_inp == "clear one tasks":
-                clearterminal()
-                if task_list == []:
-                    pass
+                    task["complete"] = "x"
+
+        self.save()
+
+    def run(self):
+        """Runs the task application."""
+
+        Utilities.clear_terminal()
+        print("Entered Tasks...")
+
+        while True:
+            self.display_tasks()
+
+            task_input = input("Tasks: What do you want to do? ")
+
+            if task_input.startswith("/"):
+                if task_input == "/exit":
+                    break
+
+                elif task_input == "/quit":
+                    sys.exit()
+
+                elif task_input == "/help":
+                    print(
+                        """
+Task commands:
+/exit: exits tasks
+/quit: quits the whole program
+/apps: shows available apps
+
+Task functions:
+add (task)
+delete all tasks
+clear (task)
+complete (task)
+"""
+                    )
+
+                elif task_input == "/apps":
+                    print("Apps:\ntasks: task tracker")
+
                 else:
-                    for x in task_list:
-                        print(f"[{x['complete']}] {x['name']} (@{x['due_date']})")
-                    while True:
-                        task_remove = input("What task do you want to remove ('/finish' to finish)? ")
-                        if task_remove.find("/") == 0:
-                            if task_remove == "/finish":
-                                print("task(s) has been removed")
-                                write_file("tasks.json", "w", json.dumps(task_list, indent=4))
-                                break
-                            elif task_remove == "/cancel":
-                                print("cancelling")
-                                break
-                            elif task_remove == "/help":
-                                print("I cannot help you right now.")
-                            else:
-                                print("command doesn't exist")
-                        else:
-                            for x in task_list:
-                                if x['name'] == task_remove:
-                                    task_list.remove(x)
-            elif task_inp == "complete task" or task_inp == "complete tasks":
-                clearterminal()
-                if task_list == []:
-                    pass
-                else:
-                    for x in task_list:
-                        print(f"[{x['complete']}] {x['name']} (@{x['due_date']})")
-                    while True:
-                        task_complete = input("What task do you want to complete ('/finish' to finish)? ")
-                        if task_complete.find("/") == 0:
-                            if task_complete == "/finish":
-                                clearterminal()
-                                print("task(s) has been complete")
-                                write_file("tasks.json", "w", json.dumps(task_list, indent=4))
-                                break
-                            elif task_complete == "/cancel":
-                                print("cancelling")
-                                break
-                            else:
-                                print("command doesn't exist")
-                        else:
-                            for x in task_list:
-                                if x['name'] == task_complete:
-                                    x['complete'] = 'x'
+                    print("Command doesn't exist.")
+
+                continue
+
+            if task_input.startswith("add "):
+                task_name = task_input[4:]
+
+                due_date = input(
+                    "When is your task due "
+                    "(format mm/dd/yyyy, and words are fine)? "
+                )
+
+                try:
+                    due_date = Utilities.date_converter(due_date)
+
+                    self.add_task(task_name, due_date)
+
+                    Utilities.clear_terminal()
+
+                except ValueError:
+                    print("Not a valid date.")
+
+            elif task_input in (
+                "delete all task",
+                "delete all tasks"
+            ):
+                Utilities.clear_terminal()
+
+                self.delete_all_tasks()
+
+                print("Tasks cleared.")
+
+            elif task_input.startswith("clear "):
+                task_name = task_input[6:]
+
+                self.clear_task(task_name)
+
+                Utilities.clear_terminal()
+
+            elif task_input.startswith("complete "):
+                task_name = task_input[9:]
+
+                self.toggle_complete(task_name)
+
+                Utilities.clear_terminal()
+
             else:
-                clearterminal()
-                print("that does not exist")
-            
-main()
+                Utilities.clear_terminal()
+                print("That does not exist.")
+
+class WorkoutManager:
+    FILE_NAME = "workout.json"
+    
+    def __init__(self):
+        self.workout = FileManager.read_json(self.FILE_NAME)
+
+    def save(self):
+        FileManager.write_json(self.FILE_NAME, self.workout)
+
+    def display_tasks(self):
+        print("Workouts:")
+        if not self.workout:
+            print("You have no workouts.")
+            return
+        for x in self.workout:
+            print(x['name'])
+
+    def run(self):
+        Utilities.clear_terminal()
+        self.display_tasks()
+        workout_input = input("What do you want to do? ")
+        Utilities.clear_terminal()
+        print(workout_input + " program works")
+        sys.exit()
+
+class CLI:
+    def __init__(self):
+        self.task_manager = TaskManager()
+        self.workout_manager = WorkoutManager()
+
+    def show_apps(self):
+        print("Apps:\ntasks: task tracker")
+
+    def handle_command(self, command: str):
+        Utilities.clear_terminal()
+
+        if command == "/quit":
+            sys.exit()
+
+        elif command == "/exit":
+            return "exit"
+
+        elif command == "/help":
+            print(
+                """
+Commands:
+/quit: quits the whole program
+/exit: exits application
+/apps: shows available apps
+"""
+            )
+
+        elif command == "/apps":
+            return "apps"
+
+        else:
+            print("Command doesn't exist.")
+
+    def open_app(self, app: str):
+        app = app.lower()
+
+        if app in ("task", "tasks"):
+            self.task_manager.run()
+        elif app in ("workout", "workouts"):
+            self.workout_manager.run()
+
+        else:
+            print("App doesn't exist.")
+
+    def run(self):
+        Utilities.clear_terminal()
+
+        print("Welcome to CLImprovement!")
+        
+        while True:
+            try:
+                user_input = input("What do you want to open ('/help' for commands)? ")
+                if user_input.startswith("/"):
+                    result = self.handle_command(user_input)
+                    if result == "exit":
+                        break
+                    elif result == "apps":
+                        self.show_apps()
+                else:
+                    self.open_app(user_input)
+            except KeyboardInterrupt:
+                print("\nYou have to use /quit because I say so.")
+
+def main():
+    app = CLI()
+    app.run()
+
+if __name__ == "__main__":
+    main()
