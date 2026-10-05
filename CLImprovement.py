@@ -2,6 +2,7 @@ import json
 import os
 import sys
 
+
 class FileManager:
     @staticmethod
     def read_file(file_name: str):
@@ -15,6 +16,10 @@ class FileManager:
 
     @staticmethod
     def read_json(file_name: str):
+        # Create the file automatically if it doesn't exist
+        if not os.path.exists(file_name):
+            FileManager.write_json(file_name, [])
+
         content = FileManager.read_file(file_name)
 
         if content == "":
@@ -29,6 +34,7 @@ class FileManager:
             "w",
             json.dumps(data, indent=4)
         )
+
 
 class Utilities:
     @staticmethod
@@ -69,6 +75,7 @@ class Utilities:
 
         return f"{year}-{month:02}-{day:02}"
 
+
 class TaskManager:
     FILE_NAME = "tasks.json"
 
@@ -105,11 +112,19 @@ class TaskManager:
         self.save()
 
     def clear_task(self, name: str):
-        self.tasks = [task for task in self.tasks if task["name"].lower() != name]
+        name = name.lower()
+
+        self.tasks = [
+            task
+            for task in self.tasks
+            if task["name"].lower() != name
+        ]
 
         self.save()
 
     def toggle_complete(self, name: str):
+        name = name.lower()
+
         for task in self.tasks:
             if task["name"].lower() == name:
                 if task["complete"] == "x":
@@ -128,7 +143,9 @@ class TaskManager:
         while True:
             self.display_tasks()
 
-            task_input = input("Tasks: What do you want to do? ")
+            task_input = input(
+                "Tasks: What do you want to do? "
+            ).strip()
 
             if task_input.startswith("/"):
                 if task_input == "/exit":
@@ -154,7 +171,11 @@ complete (task)
                     )
 
                 elif task_input == "/apps":
-                    print("Apps:\ntasks: task tracker")
+                    print(
+                        """Apps:
+tasks: task tracker
+workout: workout tracker"""
+                    )
 
                 else:
                     print("Command doesn't exist.")
@@ -162,12 +183,16 @@ complete (task)
                 continue
 
             if task_input.startswith("add "):
-                task_name = task_input[4:]
+                task_name = task_input[4:].strip()
+
+                if not task_name:
+                    print("You must provide a task name.")
+                    continue
 
                 due_date = input(
                     "When is your task due "
                     "(format mm/dd/yyyy, and words are fine)? "
-                )
+                ).strip()
 
                 try:
                     due_date = Utilities.date_converter(due_date)
@@ -190,14 +215,14 @@ complete (task)
                 print("Tasks cleared.")
 
             elif task_input.startswith("clear "):
-                task_name = task_input[6:]
+                task_name = task_input[6:].strip()
 
                 self.clear_task(task_name)
 
                 Utilities.clear_terminal()
 
             elif task_input.startswith("complete "):
-                task_name = task_input[9:]
+                task_name = task_input[9:].strip()
 
                 self.toggle_complete(task_name)
 
@@ -207,30 +232,41 @@ complete (task)
                 Utilities.clear_terminal()
                 print("That does not exist.")
 
+
 class WorkoutManager:
     FILE_NAME = "workout.json"
-    
+
     def __init__(self):
         self.workout = FileManager.read_json(self.FILE_NAME)
 
     def save(self):
         FileManager.write_json(self.FILE_NAME, self.workout)
 
-    def display_tasks(self):
+    def display_workouts(self):
         print("Workouts:")
+
         if not self.workout:
             print("You have no workouts.")
             return
-        for x in self.workout:
-            print(x['name'])
+
+        for workout in self.workout:
+            print(workout["name"])
 
     def run(self):
         Utilities.clear_terminal()
-        self.display_tasks()
-        workout_input = input("What do you want to do? ")
+
+        self.display_workouts()
+
+        workout_input = input(
+            "What do you want to do? "
+        ).strip()
+
         Utilities.clear_terminal()
+
         print(workout_input + " program works")
+
         sys.exit()
+
 
 class CLI:
     def __init__(self):
@@ -238,7 +274,11 @@ class CLI:
         self.workout_manager = WorkoutManager()
 
     def show_apps(self):
-        print("Apps:\ntasks: task tracker")
+        print(
+            """Apps:
+tasks: task tracker
+workout: workout tracker"""
+        )
 
     def handle_command(self, command: str):
         Utilities.clear_terminal()
@@ -266,10 +306,11 @@ Commands:
             print("Command doesn't exist.")
 
     def open_app(self, app: str):
-        app = app.lower()
+        app = app.lower().strip()
 
         if app in ("task", "tasks"):
             self.task_manager.run()
+
         elif app in ("workout", "workouts"):
             self.workout_manager.run()
 
@@ -280,24 +321,36 @@ Commands:
         Utilities.clear_terminal()
 
         print("Welcome to CLImprovement!")
-        
+
         while True:
             try:
-                user_input = input("What do you want to open ('/help' for commands)? ")
+                user_input = input(
+                    "What do you want to open "
+                    "('/help' for commands)? "
+                ).strip()
+
                 if user_input.startswith("/"):
                     result = self.handle_command(user_input)
+
                     if result == "exit":
                         break
+
                     elif result == "apps":
                         self.show_apps()
+
                 else:
                     self.open_app(user_input)
+
             except KeyboardInterrupt:
-                print("\nYou have to use /quit because I say so.")
+                print(
+                    "\nYou have to use /quit because I say so."
+                )
+
 
 def main():
     app = CLI()
     app.run()
+
 
 if __name__ == "__main__":
     main()
